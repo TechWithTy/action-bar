@@ -1,6 +1,6 @@
 "use client";
 
-import { Command as CommandKey, ChevronDown, ChevronRight } from "lucide-react";
+import { Command as CommandKey, ChevronDown, ChevronRight, X } from "lucide-react";
 import { type FC, useEffect, useMemo, useState } from "react";
 import { Button } from "../../../shadcn-table/src/components/ui/button";
 import {
@@ -42,20 +42,17 @@ const CommandPalette: FC<CommandPaletteProps> = ({
 		setExternalUrlAttachments,
 	} = useCommandPalette();
 
-	// Controlled query for AI suggestions
 	const [q, setQ] = useState("");
 	const [aiItems, setAiItems] = useState<CommandItem[]>([]);
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-	// Seed query when opening
 	useEffect(() => {
 		if (isOpen) {
 			setQ(initialQuery);
 		}
 	}, [isOpen, initialQuery]);
 
-	// Debounce query
 	useEffect(() => {
 		if (!q || q.trim().length < 2) {
 			setAiItems([]);
@@ -73,13 +70,20 @@ const CommandPalette: FC<CommandPaletteProps> = ({
 		return () => window.clearTimeout(id);
 	}, [q, pathname, aiSuggestEndpoint, navigate]);
 
-	// Combine AI items on top
+	useEffect(() => {
+		if (variant !== "floating" || !isOpen) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") onOpenChange(false);
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [variant, isOpen, onOpenChange]);
+
 	const combined = useMemo(
 		() => (aiItems.length ? [...aiItems, ...commands] : commands),
 		[aiItems, commands],
 	);
 
-	// Group commands by group label
 	const groups = combined.reduce<Record<string, CommandItem[]>>((acc, cmd) => {
 		const key = cmd.group || "General";
 		if (!acc[key]) acc[key] = [];
@@ -207,34 +211,52 @@ const CommandPalette: FC<CommandPaletteProps> = ({
 	if (variant === "floating") {
 		return (
 			<>
-				{/* Floating Action Button */}
-				<div className="fixed right-6 bottom-6 z-50">
-					<Button
-						type="button"
-						className="h-12 w-12 rounded-full p-0 shadow-lg"
-						onClick={() => onOpenChange(!isOpen)}
-						aria-label={
-							isOpen
-								? "Close floating command palette"
-								: "Open floating command palette"
-						}
-					>
-						<CommandKey className="h-5 w-5" />
-					</Button>
-				</div>
-				{/* Floating Panel */}
 				{isOpen ? (
-					<div
-						className="fixed right-6 bottom-24 z-50 w-[min(90vw,28rem)] rounded-lg border border-border bg-background text-foreground shadow-xl"
-						style={{
-							backgroundColor: "var(--background)",
-							color: "var(--foreground)",
-						}}
-					>
-						<Command className="[&_[cmdk-input-wrapper]]:rounded-t-lg">
-							{content}
-						</Command>
+					<div className="fixed right-6 bottom-6 z-50">
+						<Button
+							type="button"
+							className="h-12 w-12 rounded-full p-0 shadow-lg"
+							onClick={() => onOpenChange(!isOpen)}
+							aria-label={
+								isOpen
+									? "Close floating command palette"
+									: "Open floating command palette"
+							}
+						>
+							<CommandKey className="h-5 w-5" />
+						</Button>
 					</div>
+				) : null}
+				{isOpen ? (
+					<>
+						<div
+							className="fixed inset-0 z-40"
+							onClick={() => onOpenChange(false)}
+							aria-hidden="true"
+						/>
+						<div
+							className="fixed right-6 bottom-24 z-50 w-[min(90vw,28rem)] rounded-lg border border-border bg-background text-foreground shadow-xl"
+							style={{
+								backgroundColor: "var(--background)",
+								color: "var(--foreground)",
+							}}
+						>
+							<div className="flex items-center justify-end p-2">
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									aria-label="Close"
+									onClick={() => onOpenChange(false)}
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							</div>
+							<Command className="[&_[cmdk-input-wrapper]]:rounded-t-lg">
+								{content}
+							</Command>
+						</div>
+					</>
 				) : null}
 			</>
 		);
