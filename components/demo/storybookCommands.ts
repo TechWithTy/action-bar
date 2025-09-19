@@ -36,7 +36,7 @@ export function registerStorybookDemoCommands({
       icon: createElement(PlayCircle, { className: "h-4 w-4" }),
       preview: {
         type: "youtube",
-        src: videoUrl || undefined,
+        src: videoUrl || "",
         placeholder: "https://place-hold.it/300x500/666/fff",
         alt: "YouTube preview",
       },

@@ -51,6 +51,10 @@ export function StandaloneCommandPaletteProvider({
 		selectContainerProp,
 	);
 	const [openedBySelection, setOpenedBySelection] = useState<boolean>(false);
+	// Track external URL attachments to render as chips independent of the input text
+	const [externalUrlAttachments, setExternalUrlAttachments] = useState<string[]>(
+		[],
+	);
 
 	const pathname =
 		typeof window !== "undefined" ? window.location.pathname : "/";
@@ -59,6 +63,7 @@ export function StandaloneCommandPaletteProvider({
 	const base: CommandItem[] = [];
 	const scoped: CommandItem[] = [];
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	const commands = useMemo(() => {
 		return [...base, ...scoped, ...dynamicCommands];
 	}, [base, scoped, dynamicCommands]);
@@ -101,7 +106,9 @@ export function StandaloneCommandPaletteProvider({
 
 		const nodeToEl = (n: Node | null): HTMLElement | null => {
 			if (!n) return null;
-			return n instanceof HTMLElement ? n : ((n as any).parentElement ?? null);
+			if (n instanceof HTMLElement) return n;
+			if (n instanceof Element) return n.parentElement;
+			return null;
 		};
 
 		const tryOpenFromSelection = () => {
@@ -151,6 +158,7 @@ export function StandaloneCommandPaletteProvider({
 		if (!isOpen && openedBySelection) setOpenedBySelection(false);
 	}, [isOpen, openedBySelection]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	const value: CommandPaletteContextValue = useMemo(
 		() => ({
 			isOpen,
@@ -166,6 +174,8 @@ export function StandaloneCommandPaletteProvider({
 			pomFlowUrl,
 			keyboard,
 			pathname,
+			externalUrlAttachments,
+			setExternalUrlAttachments,
 			navigate: (path: string) => {
 				try {
 					window.location.assign(path);
@@ -183,6 +193,7 @@ export function StandaloneCommandPaletteProvider({
 			pomFlowUrl,
 			keyboard,
 			pathname,
+			externalUrlAttachments,
 		],
 	);
 
@@ -202,6 +213,7 @@ export function StandaloneCommandPaletteProvider({
 			setOpenOnSelect: (enabled: boolean) => setOpenOnSelect(!!enabled),
 			setSelectContainer: (selector?: string) =>
 				setSelectContainer(selector || undefined),
+			setExternalUrls: (urls: string[]) => setExternalUrlAttachments(urls ?? []),
 		} as const;
 		window.DealActionBar = { ...window.DealActionBar, ...api } as NonNullable<
 			Window["DealActionBar"]
